@@ -12,8 +12,15 @@ app = Flask(__name__)
 CORS(app)  # Permite requisições do frontend
 
 # Configuração do banco de dados
-BASE_DIR = Path(__file__).parent.parent
-DB_FILE = BASE_DIR / "backend" / "database.db"
+# PythonAnywhere: usar caminho absoluto ou relativo ao diretório atual
+BASE_DIR = Path(__file__).parent.absolute()
+DB_FILE = BASE_DIR / "database.db"
+
+# Se não encontrar no diretório atual, tentar diretório pai
+if not DB_FILE.exists():
+    alt_path = BASE_DIR.parent / "backend" / "database.db"
+    if alt_path.exists():
+        DB_FILE = alt_path
 
 def get_db_connection():
     """Cria conexão com o banco de dados SQLite"""
@@ -285,6 +292,14 @@ if __name__ == '__main__':
     # Verificar se o banco de dados existe
     if not DB_FILE.exists():
         print(f"⚠️  Banco de dados não encontrado em {DB_FILE}")
-        print("Execute primeiro: python backend/import_excel_to_db.py")
+        print("Execute primeiro: python import_excel_to_db.py")
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # PythonAnywhere: usar variáveis de ambiente ou porta padrão
+    port = int(os.environ.get('PORT', 5000))
+    host = os.environ.get('HOST', '0.0.0.0')
+    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    
+    print(f"🚀 Iniciando servidor Flask em {host}:{port}")
+    print(f"📊 Banco de dados: {DB_FILE}")
+    
+    app.run(debug=debug, host=host, port=port)

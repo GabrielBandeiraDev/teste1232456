@@ -9,9 +9,16 @@ from datetime import timedelta, datetime
 import numpy as np
 
 # Caminhos
-BASE_DIR = Path(__file__).parent.parent
+# PythonAnywhere: ajustar caminhos conforme necessário
+BASE_DIR = Path(__file__).parent
 EXCEL_FILE = BASE_DIR / "template_padrao (1).xlsx"
-DB_FILE = BASE_DIR / "backend" / "database.db"
+DB_FILE = BASE_DIR / "database.db"
+
+# Se não encontrar no diretório atual, tentar diretório pai
+if not EXCEL_FILE.exists():
+    EXCEL_FILE = BASE_DIR.parent / "template_padrao (1).xlsx"
+if not DB_FILE.exists() and (BASE_DIR.parent / "backend" / "database.db").exists():
+    DB_FILE = BASE_DIR.parent / "backend" / "database.db"
 
 def import_excel_to_sqlite():
     """Importa todas as planilhas do Excel para tabelas SQLite"""
