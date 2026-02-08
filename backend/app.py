@@ -53,8 +53,23 @@ def get_db_connection():
         raise
 
 def row_to_dict(row):
-    """Converte uma linha do SQLite para dicionário"""
-    return dict(row)
+    """Converte uma linha do SQLite para dicionário, tratando tipos especiais"""
+    result = {}
+    for key in row.keys():
+        value = row[key]
+        # Converter None para null (JSON)
+        if value is None:
+            result[key] = None
+        # Manter strings, números e booleanos como estão
+        elif isinstance(value, (str, int, float, bool)):
+            result[key] = value
+        # Converter bytes para string (se necessário)
+        elif isinstance(value, bytes):
+            result[key] = value.decode('utf-8', errors='ignore')
+        # Converter outros tipos para string
+        else:
+            result[key] = str(value)
+    return result
 
 @app.route('/api/health', methods=['GET'])
 def health():
