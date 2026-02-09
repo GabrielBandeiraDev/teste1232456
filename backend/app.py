@@ -132,14 +132,44 @@ def get_table_data(table_name):
         
         # Aplicar filtros se as colunas existirem e os parâmetros foram fornecidos
         if mes_col and mes:
-            conditions.append(f"{mes_col} = ?")
-            params.append(mes)
+            # Converter nome do mês para número (1-12) para comparação com datas ISO
+            meses_nomes = {
+                'janeiro': 1, 'fevereiro': 2, 'março': 3, 'marco': 3,
+                'abril': 4, 'maio': 5, 'junho': 6,
+                'julho': 7, 'agosto': 8, 'setembro': 9,
+                'outubro': 10, 'novembro': 11, 'dezembro': 12
+            }
+            
+            mes_lower = mes.lower().strip()
+            mes_num = meses_nomes.get(mes_lower)
+            
+            # Construir condição que funciona tanto para datas ISO quanto para nomes de meses
+            # SQLite: strftime('%m', datetime_field) retorna '01'-'12' como string
+            if mes_num:
+                # Tentar múltiplas formas: data ISO (extrair mês), nome do mês, número
+                conditions.append(
+                    f"(CAST(strftime('%m', {mes_col}) AS INTEGER) = ? OR "
+                    f"LOWER(TRIM({mes_col})) = LOWER(?) OR "
+                    f"CAST({mes_col} AS INTEGER) = ?)"
+                )
+                params.extend([mes_num, mes, mes_num])
+            else:
+                # Comparação direta (pode ser número ou formato diferente)
+                conditions.append(f"(LOWER(TRIM({mes_col})) = LOWER(?) OR {mes_col} = ?)")
+                params.extend([mes, mes])
         
         if ano_col and ano:
             try:
                 ano_int = int(ano)
-                conditions.append(f"{ano_col} = ?")
-                params.append(ano_int)
+                # Se temos campo de mês que pode ser data, também filtrar por ano na data
+                if mes_col:
+                    conditions.append(
+                        f"((CAST(strftime('%Y', {mes_col}) AS INTEGER) = ?) OR ({ano_col} = ?))"
+                    )
+                    params.extend([ano_int, ano_int])
+                else:
+                    conditions.append(f"{ano_col} = ?")
+                    params.append(ano_int)
             except ValueError:
                 pass  # Ignorar se ano não for numérico
         
