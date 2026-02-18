@@ -1,0 +1,18 @@
+📊 STATUS DA IMPORTAÇÃO DO EXCEL
+
+✅ TABELAS COM DADOS:
+  ✓ colaboradores: 189 registros
+  ✓ base_kpi: 52 registros (dados financeiros)
+  ✓ absenteísmo: 1092 registros
+
+⚠️ TABELAS VAZIAS (podem ter planilhas no Excel):
+  ⚠️ base_dashboard: 0 registros
+  ⚠️ radar_de_competencias: 0 registros
+
+📋 TABELAS DO SISTEMA:
+  ✓ avaliacoes: 0 registros (sistema de avaliações - OK estar vazia)
+
+🔍 PRÓXIMOS PASSOS:
+1. Verificar se há mais planilhas no Excel que não foram importadas
+2. Se houver, executar: python import_excel_to_db_safe.py
+   (preserva dados existentes e adiciona os faltantes)

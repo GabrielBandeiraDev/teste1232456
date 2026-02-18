@@ -1,5 +1,6 @@
 """
 Script para importar dados do Excel template_padrao para SQLite
+VERSÃO ORIGINAL: Sobrescreve todas as tabelas (use import_excel_to_db_safe.py para preservar dados)
 """
 import pandas as pd
 import sqlite3
@@ -99,6 +100,15 @@ def import_excel_to_sqlite():
             df = df.replace({'nan': None, 'NaT': None, 'None': None})
             
             # Criar tabela no SQLite
+            # AVISO: Esta versão sobrescreve todas as tabelas
+            # Use import_excel_to_db_safe.py para preservar dados financeiros existentes
+            
+            # Verificar se é tabela protegida
+            TABELAS_PROTEGIDAS = {'base_kpi', 'absenteísmo', 'avaliacoes'}
+            if table_name in TABELAS_PROTEGIDAS:
+                print(f"  ⚠️  AVISO: Tabela '{table_name}' será sobrescrita!")
+                print(f"     Use import_excel_to_db_safe.py para preservar dados existentes")
+            
             # Primeiro, dropa a tabela se existir
             cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
             

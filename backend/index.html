@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Extração de Dados da Folha de Ponto</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .upload-section {
+            background: #f8f9fa;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s;
+        }
+        
+        .upload-section:hover {
+            border-color: #764ba2;
+            background: #f0f0f0;
+        }
+        
+        .upload-section.dragover {
+            border-color: #764ba2;
+            background: #e8e8ff;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .file-label {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .file-label:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .file-name {
+            margin-top: 15px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .btn-upload {
+            margin-top: 20px;
+            padding: 12px 32px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: none;
+        }
+        
+        .btn-upload:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+        }
+        
+        .btn-upload:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .results {
+            display: none;
+            margin-top: 30px;
+        }
+        
+        .results h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 22px;
+        }
+        
+        .result-card {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+        }
+        
+        .result-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .result-item {
+            margin: 8px 0;
+            color: #555;
+        }
+        
+        .result-item strong {
+            color: #333;
+        }
+        
+        .error {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .success {
+            background: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        table th, table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        table th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        
+        table tr:hover {
+            background: #f5f5f5;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 16px;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧾 Teste de Extração - Folha de Ponto</h1>
+        <p class="subtitle">Faça upload de um PDF de folha de ponto para extrair dados de absenteísmo, horas extras e custos</p>
+        
+        <div class="upload-section" id="uploadSection">
+            <p style="margin-bottom: 15px; color: #666;">Selecione ou arraste um arquivo PDF</p>
+            <label for="fileInput" class="file-label">
+                📄 Escolher Arquivo PDF
+            </label>
+            <input type="file" id="fileInput" accept=".pdf" />
+            <div class="file-name" id="fileName"></div>
+            <button class="btn-upload" id="btnUpload">🚀 Processar PDF</button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px; color: #666;">Processando PDF...</p>
+        </div>
+        
+        <div class="error" id="error"></div>
+        <div class="success" id="success"></div>
+        
+        <div class="results" id="results">
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('summary')">📊 Resumo</button>
+                <button class="tab" onclick="showTab('details')">📋 Detalhes</button>
+                <button class="tab" onclick="showTab('raw')">🔍 Dados Brutos</button>
+            </div>
+            
+            <div id="summaryTab" class="tab-content active">
+                <h2>Resumo do Processamento</h2>
+                <div id="summaryContent"></div>
+            </div>
+            
+            <div id="detailsTab" class="tab-content">
+                <h2>Detalhes dos Registros</h2>
+                <div id="detailsContent"></div>
+            </div>
+            
+            <div id="rawTab" class="tab-content">
+                <h2>Dados Brutos Extraídos</h2>
+                <pre id="rawContent" style="background: #f8f9fa; padding: 20px; border-radius: 6px; overflow-x: auto;"></pre>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const btnUpload = document.getElementById('btnUpload');
+        const fileName = document.getElementById('fileName');
+        const uploadSection = document.getElementById('uploadSection');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const error = document.getElementById('error');
+        const success = document.getElementById('success');
+        
+        let selectedFile = null;
+        
+        fileInput.addEventListener('change', (e) => {
+            selectedFile = e.target.files[0];
+            if (selectedFile) {
+                fileName.textContent = `📄 ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(2)} KB)`;
+                btnUpload.style.display = 'inline-block';
+            }
+        });
+        
+        // Drag and drop
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+        
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+        
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type === 'application/pdf') {
+                fileInput.files = files;
+                selectedFile = files[0];
+                fileName.textContent = `📄 ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(2)} KB)`;
+                btnUpload.style.display = 'inline-block';
+            } else {
+                alert('Por favor, selecione um arquivo PDF');
+            }
+        });
+        
+        btnUpload.addEventListener('click', async () => {
+            if (!selectedFile) {
+                alert('Por favor, selecione um arquivo PDF');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            
+            // Mostrar loading
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            error.style.display = 'none';
+            success.style.display = 'none';
+            btnUpload.disabled = true;
+            
+            try {
+                const response = await fetch('/api/upload/folha-ponto', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                loading.style.display = 'none';
+                btnUpload.disabled = false;
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Erro ao processar PDF');
+                }
+                
+                // Mostrar sucesso
+                success.textContent = `✅ ${data.message}`;
+                success.style.display = 'block';
+                
+                // Mostrar resultados
+                displayResults(data);
+                results.style.display = 'block';
+                
+            } catch (err) {
+                loading.style.display = 'none';
+                btnUpload.disabled = false;
+                error.textContent = `❌ Erro: ${err.message}`;
+                error.style.display = 'block';
+                console.error('Erro:', err);
+            }
+        });
+        
+        function displayResults(data) {
+            // Resumo
+            const summaryContent = document.getElementById('summaryContent');
+            const totalRegistros = data.resultados?.length || 0;
+            const inseridos = data.resultados?.filter(r => r.status === 'inserido').length || 0;
+            const atualizados = data.resultados?.filter(r => r.status === 'atualizado').length || 0;
+            
+            let totalHoras = 0;
+            let totalCusto = 0;
+            data.dados_extraidos?.forEach(d => {
+                totalHoras += d.horas_extras || 0;
+                totalCusto += d.custo_horas_extras || 0;
+            });
+            
+            summaryContent.innerHTML = `
+                <div class="result-card">
+                    <h3>📊 Estatísticas</h3>
+                    <div class="result-item"><strong>Total de Registros:</strong> ${totalRegistros}</div>
+                    <div class="result-item"><strong>Inseridos:</strong> ${inseridos}</div>
+                    <div class="result-item"><strong>Atualizados:</strong> ${atualizados}</div>
+                </div>
+                <div class="result-card">
+                    <h3>💰 Totais Extraídos</h3>
+                    <div class="result-item"><strong>Total de Horas Extras:</strong> ${totalHoras.toFixed(2)} horas</div>
+                    <div class="result-item"><strong>Total de Custo:</strong> R$ ${totalCusto.toFixed(2)}</div>
+                </div>
+            `;
+            
+            // Detalhes
+            const detailsContent = document.getElementById('detailsContent');
+            if (data.dados_extraidos && data.dados_extraidos.length > 0) {
+                let tableHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>CPF</th>
+                                <th>Nome</th>
+                                <th>Mês</th>
+                                <th>Ano</th>
+                                <th>Horas Extras</th>
+                                <th>Custo (R$)</th>
+                                <th>Faltas</th>
+                                <th>Abonos</th>
+                                <th>Salário (R$)</th>
+                                <th>Valor Hora Extra (R$)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                data.dados_extraidos.forEach((d, idx) => {
+                    const resultado = data.resultados?.[idx];
+                    const status = resultado?.status || 'N/A';
+                    const statusBadge = status === 'inserido' ? '🆕 Novo' : '🔄 Atualizado';
+                    
+                    tableHTML += `
+                        <tr>
+                            <td>${d.cpf || '-'}</td>
+                            <td>${d.nome || '-'}</td>
+                            <td>${d.mes || '-'}</td>
+                            <td>${d.ano || '-'}</td>
+                            <td>${(d.horas_extras || 0).toFixed(2)}</td>
+                            <td>R$ ${(d.custo_horas_extras || 0).toFixed(2)}</td>
+                            <td>${(d.faltas || 0).toFixed(2)}</td>
+                            <td>${(d.abonos || 0).toFixed(2)}</td>
+                            <td>R$ ${(d.salario || 0).toFixed(2)}</td>
+                            <td>R$ ${(d.valor_hora_extra || 0).toFixed(2)}</td>
+                            <td>${statusBadge}</td>
+                        </tr>
+                    `;
+                });
+                
+                tableHTML += '</tbody></table>';
+                detailsContent.innerHTML = tableHTML;
+            } else {
+                detailsContent.innerHTML = '<p>Nenhum dado extraído.</p>';
+            }
+            
+            // Dados brutos
+            document.getElementById('rawContent').textContent = JSON.stringify(data, null, 2);
+        }
+        
+        function showTab(tabName) {
+            // Remover active de todas as tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            // Adicionar active na tab selecionada
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+    </script>
+</body>
+</html>
