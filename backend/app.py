@@ -9,6 +9,8 @@ from pathlib import Path
 import json
 import re
 from datetime import datetime
+import secrets
+import hashlib
 try:
     import pdfplumber
     PDF_AVAILABLE = True
@@ -59,6 +61,40 @@ def get_db_connection():
         print(f"Erro ao conectar ao banco de dados: {e}")
         print(f"Caminho tentado: {DB_FILE}")
         raise
+
+def init_auth_table():
+    """Inicializa a tabela de usuários e cria usuário padrão se não existir"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT UNIQUE NOT NULL,
+                senha_hash TEXT NOT NULL,
+                nome TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'admin',
+                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor.execute("SELECT COUNT(*) FROM usuarios WHERE email = ?", ("admin@altus.com",))
+        if cursor.fetchone()[0] == 0:
+            senha_hash = hashlib.sha256("admin123".encode()).hexdigest()
+            cursor.execute(
+                "INSERT INTO usuarios (email, senha_hash, nome, role) VALUES (?, ?, ?, ?)",
+                ("admin@altus.com", senha_hash, "Administrador", "admin")
+            )
+            senha_gestor = hashlib.sha256("gestor123".encode()).hexdigest()
+            cursor.execute(
+                "INSERT INTO usuarios (email, senha_hash, nome, role) VALUES (?, ?, ?, ?)",
+                ("gestor@altus.com", senha_gestor, "Gestor", "gestor")
+            )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"⚠️ init_auth_table: {e}")
+
+init_auth_table()
 
 def row_to_dict(row):
     """Converte uma linha do SQLite para dicionário, tratando tipos especiais"""
@@ -1315,6 +1351,38 @@ def salvar_avaliacao(token):
             "status": "concluida"
         }), 200
         
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    """Endpoint de autenticação"""
+    try:
+        data = request.get_json() or {}
+        email = (data.get('email') or '').strip().lower()
+        senha = data.get('senha') or ''
+        if not email or not senha:
+            return jsonify({"error": "Email e senha são obrigatórios"}), 400
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM usuarios WHERE email = ?", (email,))
+        usuario = cursor.fetchone()
+        conn.close()
+        if not usuario:
+            return jsonify({"error": "Credenciais inválidas"}), 401
+        senha_hash = hashlib.sha256(senha.encode()).hexdigest()
+        if usuario['senha_hash'] != senha_hash:
+            return jsonify({"error": "Credenciais inválidas"}), 401
+        token = secrets.token_urlsafe(32)
+        return jsonify({
+            "token": token,
+            "usuario": {
+                "id": usuario['id'],
+                "email": usuario['email'],
+                "nome": usuario['nome'],
+                "role": usuario['role']
+            }
+        }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
