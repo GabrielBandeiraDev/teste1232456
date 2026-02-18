@@ -1361,20 +1361,29 @@ def login():
         data = request.get_json() or {}
         email = (data.get('email') or '').strip().lower()
         senha = data.get('senha') or ''
+        
+        print(f"🔐 Tentativa de login: email={email}")
+        
         if not email or not senha:
             return jsonify({"error": "Email e senha são obrigatórios"}), 400
+        
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM usuarios WHERE email = ?", (email,))
         usuario = cursor.fetchone()
         conn.close()
+        
         if not usuario:
+            print(f"❌ Usuário não encontrado: {email}")
             return jsonify({"error": "Credenciais inválidas"}), 401
+        
         senha_hash = hashlib.sha256(senha.encode()).hexdigest()
         if usuario['senha_hash'] != senha_hash:
+            print(f"❌ Senha incorreta para: {email}")
             return jsonify({"error": "Credenciais inválidas"}), 401
+        
         token = secrets.token_urlsafe(32)
-        return jsonify({
+        response_data = {
             "token": token,
             "usuario": {
                 "id": usuario['id'],
@@ -1382,8 +1391,15 @@ def login():
                 "nome": usuario['nome'],
                 "role": usuario['role']
             }
-        }), 200
+        }
+        
+        print(f"✅ Login bem-sucedido: {email} (role: {usuario['role']})")
+        return jsonify(response_data), 200
+        
     except Exception as e:
+        print(f"❌ Erro no login: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/avaliacoes', methods=['GET'])
